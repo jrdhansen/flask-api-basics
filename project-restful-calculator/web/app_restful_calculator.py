@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 
-app = Flask(__name__) 
+app = Flask(__name__)
 api = Api(app=app)
 
 
@@ -136,4 +136,4 @@ def hello_world():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0") # Modify this for container address
