@@ -1,3 +1,41 @@
+"""
+User requirements:
+- Allow users to register, costs 0 credits
+- Each user gets 10 credits (credit = unit of purchase) for free at registration
+- Store a sentence on our database, one sentence costs one credit
+- Retrieve a user's stored sentence from our db at a price of one credit
+"""
+
+from flask import Flask, jsonify, request
+from flask_restful import Api, Resource
+from pymongo import MongoClient
+
+app = Flask(__name__)
+api = Api(app)
+
+client = MongoClient('mongodb://db:27017')
+db = client.SentencesDB
+Users = db['Users']  # rather than having Sentences as separate collection, store sentences as embedded doc w/in user doc
+
+
+class Register(Resource):
+    def post(self):
+        # STEP 1.1: get user's posted data
+        posted_data = request.get_json()
+        # STEP 1.2
+        # Could/should validate user's submission for their username and password,
+        # e.g. sufficiently-strong password, no unallowed chars, etc.
+        # However, that gets us away from the point of learning about and
+        # implementing the API and is more detail than needed for that purpose at the moment.
+        # STEP 2: 
+        username = posted_data['username']
+        password = posted_data['password']
+        # STEP 3: hash(password, salt) to get hashed password. Don't store password as plaint text!
+
+
+
+
+"""
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from pymongo import MongoClient
@@ -20,14 +58,6 @@ class Visit(Resource):
         return 'hello user: {}'.format(updated_num)
 
 def input_validation(posted_data, function_name):
-    """
-    Validate input data for a given calculator operation (function_name).
-    Confirm that all fields populated and proper data types. Return status code.
-
-    :param posted_data json: should be of form {"x": x_value, "y": y_value}
-    :param function_name str: should be in ['add', 'subtract', 'multiply', 'divide'] 
-    :return status_code int: status code corresponding to input quality
-    """
     if function_name in ["add", "subtract", "multiply"]:
         if "x" not in posted_data or "y" not in posted_data:
             return 301  # status code we defined in Resource Method Chart for missing an operand
@@ -152,3 +182,4 @@ def hello_world():
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0") # Modify this for container address
+"""
