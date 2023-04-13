@@ -9,6 +9,7 @@ User requirements:
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from pymongo import MongoClient
+import bcrypt
 
 app = Flask(__name__)
 api = Api(app)
@@ -31,9 +32,81 @@ class Register(Resource):
         username = posted_data['username']
         password = posted_data['password']
         # STEP 3: hash(password, salt) to get hashed password. Don't store password as plaint text!
+        hashed_pw = bcrypt.hashpw(password.encode('utf8'), bcrypt.gensalt())
+        # STEP 4: store username and password into database
+        Users.insert_one({
+             'username': username,
+             'password': hashed_pw,
+             'sentence': '',
+             'credits': 6
+        })
+        # STEP 5: notify user of successful registration
+        return_json = {
+             'status': 200,
+             'message': 'You successfully registered for the DBaaS API'
+        }
+        return jsonify(return_json)
+
+
+def verify_pw(user, pw):
+    hashed_pw = Users.find({
+        'username': user
+    })[0]['password']
+    if bcrypt.hashpw(pw.encode('utf8'), hashed_pw) == hashed_pw:
+        return True
+    else:
+        return False
+
+def get_credits_balance(user):
+    return Users.find({
+        'username': user
+    })[0]['credits']
+
+class Store(Resource):
+    def post(self):
+        # STEP 1: get posted data
+        posted_data = request.get_json()
+        # STEP 2: read the data
+        username = posted_data['username']
+        password = posted_data['password']
+        sentence = posted_data['sentence']
+        # STEP 2.2: assume correct username & password and sufficient credits balance (bad assumption, but just getting up MPV API).
+        status_code = 200
+        status_message = 'Successful login, sentence in DBaaS updated, credits balance updated'
+        # STEP 3: verify that the username's password is correct
+        correct_pw = verify_pw(username, password)
+        if not correct_pw:
+            status_code = 302
+            status_message = 'Incorrect username or password'
+        # STEP 4: verify that the user has sufficient credits balance to store a sentence
+        num_credits = get_credits_balance(username)
+        if num_credits <= 0:
+            status_code = 301
+            status_message = 'Insufficient credits balance to complete operation'
+        # STEP 5: store the sentence, decrement the user's credits balance, return 200 status code
+        Users.update_one({
+            'username':username
+        },
+        {
+            '$set':{
+                'sentence':sentence},
+                'credits': num_credits-1
+        })
+
+        return_json = {
+            'status': status_code,
+            'status_message': status_message
+        }
+        return jsonify(return_json)
 
 
 
+api.add_resource(Register, '/register')
+api.add_resource(Store, '/store')
+
+if __name__ == '__main__':
+     app.run(host='0.0.0.0')
+        
 
 """
 from flask import Flask, jsonify, request
@@ -76,10 +149,6 @@ def input_validation(posted_data, function_name):
 
 class Add(Resource):
     def post(self):
-        """
-        Obtain posted data for addition, validate operands, sum inputs,
-        return {sum, status code}.
-        """
         posted_data = request.get_json()
 
         status_code = input_validation(posted_data=posted_data, function_name="add")
@@ -99,10 +168,6 @@ class Add(Resource):
 
 class Subtract(Resource):
     def post(self):
-        """
-        Obtain posted data for subtraction, validate operands, calc diff inputs,
-        return {difference_btwn_nums, status code}.
-        """
         posted_data = request.get_json()
 
         status_code = input_validation(posted_data=posted_data, function_name="subtract")
@@ -122,10 +187,6 @@ class Subtract(Resource):
 
 class Multiply(Resource):
     def post(self):
-        """
-        Obtain posted data for multiplication, validate operands, calc product
-        of inputs, return {product, status code}.
-        """
         posted_data = request.get_json()
 
         status_code = input_validation(posted_data=posted_data, function_name="multiply")
@@ -145,10 +206,6 @@ class Multiply(Resource):
 
 class Divide(Resource):
     def post(self):
-        """
-        Obtain posted data for division, validate operands, calc quotient of
-        inputs, return {quotient, status code}.
-        """
         posted_data = request.get_json()
 
         status_code = input_validation(posted_data=posted_data, function_name="divide")
