@@ -59,7 +59,7 @@ def register():
     # STEP 5: notify user of successful registration
     return_json = {
          'status': 200,
-         'message': 'You successfully registered for the DBaaS API'
+         'message': 'You successfully registered for the DBaaS API ADDING TEST TEXT TO PRINT'
     }
     return jsonify(return_json)
 
@@ -87,8 +87,9 @@ def store():
     # STEP 5: if they have the right [user,pw] and sufficient credits, store the
     # sentence, decrement the user's credits balance, return 200 status code
     else:
-        filter = { "username": username }
-        new_doc_values = { "$set": { "sentence": sentence, "credits" : (num_credits-1) }}
+        filter = {'username': username}
+        new_doc_values = {'$set': {'sentence': sentence, 'credits': (num_credits-1)}}
+        new_doc_values = {'$set': {'sentence': sentence}}
         Users.update_one(filter, new_doc_values)
 
     return_json = {
