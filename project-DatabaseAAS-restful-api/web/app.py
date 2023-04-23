@@ -6,6 +6,7 @@ User requirements:
 - Retrieve a user's stored sentence from our db at a price of one credit
 """
 
+import sys
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
 import bcrypt
@@ -16,6 +17,7 @@ client = MongoClient('mongodb://db:27017')
 db = client.SentencesDB
 Users = db['Users']  # rather than having Sentences as separate collection,
                      # store sentences as embedded doc w/in a single user's doc
+
 
 #-------------------------------------------------------------------------------
 # HELPER FUNCTIONS
@@ -30,10 +32,17 @@ def verify_pw(user, pw):
         return False
 
 def get_credits_balance(user):
-    return Users.find({
+    return Users.find_one({
         'username': user
-    })[0]['credits']
+    })['credits']
+
+
+def get_user_stored_sentence(user):
+    return Users.find_one({
+        'username': user
+    })['sentence']
 #-------------------------------------------------------------------------------
+
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -59,9 +68,10 @@ def register():
     # STEP 5: notify user of successful registration
     return_json = {
          'status': 200,
-         'message': 'You successfully registered for the DBaaS API ADDING TEST TEXT TO PRINT'
+         'message': 'You successfully registered for the DBaaS API'
     }
     return jsonify(return_json)
+
 
 @app.route('/store', methods=['POST'])
 def store():
@@ -87,11 +97,61 @@ def store():
     # STEP 5: if they have the right [user,pw] and sufficient credits, store the
     # sentence, decrement the user's credits balance, return 200 status code
     else:
+        #print('num_credits before decrement: {}'.format(num_credits), file=sys.stderr)
+        #num_credits -= 1  # decrement credits since we're successfully storing a sentence in this block
+        #print('num_credits after  decrement: {}'.format(num_credits), file=sys.stderr)
         filter = {'username': username}
         new_doc_values = {'$set': {'sentence': sentence, 'credits': (num_credits-1)}}
-        new_doc_values = {'$set': {'sentence': sentence}}
         Users.update_one(filter, new_doc_values)
 
+    return_json = {
+        'status': status_code,
+        'status_message': status_message
+    }
+    return jsonify(return_json)
+
+
+@app.route('/check_credits_balance', methods=['POST'])
+def check_credits_balance():
+    posted_data = request.get_json()
+    username = posted_data['username']
+    password = posted_data['password']
+    status_code = 200
+    # STEP 3: verify that the username's password is correct
+    correct_pw = verify_pw(username, password)
+    num_credits = get_credits_balance(username)
+    if not correct_pw:
+        status_code = 302
+        status_message = 'Incorrect username or password'
+    status_message = 'Credits balance for username \'{}\' is: {}'.format(username, num_credits)
+    return_json = {
+        'status': status_code,
+        'status_message': status_message
+    }
+    return jsonify(return_json)
+
+
+@app.route('/retrieve', methods=['POST'])
+def retrieve():
+    posted_data = request.get_json()
+    username = posted_data['username']
+    password = posted_data['password']
+    status_code = 200
+    correct_pw = verify_pw(username, password)
+    num_credits = get_credits_balance(username)
+    if not correct_pw:
+        status_code = 302
+        status_message = 'Incorrect username or password'
+    elif num_credits <= 0:
+        status_code = 301
+        status_message = 'Insufficient credits balance to complete operation'
+    # If correct_pw and sufficient credits, retrieve sentence and decrement credits
+    else:
+        filter = {'username': username}
+        new_doc_values = {'$set': {'credits': (num_credits-1)}}
+        Users.update_one(filter, new_doc_values)
+        sentence = get_user_stored_sentence(username)
+        status_message = 'Your sentence is: \'{}\''.format(sentence)
     return_json = {
         'status': status_code,
         'status_message': status_message
