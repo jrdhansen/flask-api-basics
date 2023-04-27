@@ -46,6 +46,13 @@ def get_user_stored_sentence(user):
 
 @app.route('/register', methods=['POST'])
 def register():
+    """
+    Create a new user.
+
+    Params from posted request object
+    :param username str: supplied username for new user registration
+    :param password str: supplied password for new user registration
+    """
     # STEP 1.1: get user's posted data
     posted_data = request.get_json()
     # STEP 1.2
@@ -75,6 +82,14 @@ def register():
 
 @app.route('/store', methods=['POST'])
 def store():
+    """
+    Store a given user's desired sentence in the DBaaS db.
+
+    Params from posted request object
+    :param username str: supplied username for verifying existing user
+    :param password str: supplied password for verifying existing user
+    :param sentence str: supplied sentence to be stored for verified existing user
+    """
     # STEP 1: get posted data
     posted_data = request.get_json()
     # STEP 2: read the data
@@ -113,6 +128,13 @@ def store():
 
 @app.route('/check_credits_balance', methods=['POST'])
 def check_credits_balance():
+    """
+    Retrieve a given user's credit balance.
+
+    Params from posted request object
+    :param username str: supplied username for verifying existing user
+    :param password str: supplied password for verifying existing user
+    """
     posted_data = request.get_json()
     username = posted_data['username']
     password = posted_data['password']
@@ -133,6 +155,13 @@ def check_credits_balance():
 
 @app.route('/retrieve', methods=['POST'])
 def retrieve():
+    """
+    Retrieve a given user's stored sentence.
+
+    Params from posted request object
+    :param username str: supplied username for verifying existing user
+    :param password str: supplied password for verifying existing user
+    """
     posted_data = request.get_json()
     username = posted_data['username']
     password = posted_data['password']
