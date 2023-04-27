@@ -1,9 +1,10 @@
 """
 User requirements:
 - Allow users to register, costs 0 credits
-- Each user gets 10 credits (credit = unit of purchase) for free at registration
+- Each user gets 6 credits (credit = unit of purchase) for free at registration
 - Store a sentence on our database, one sentence costs one credit
 - Retrieve a user's stored sentence from our db at a price of one credit
+- Allow the user to check their credit balance
 """
 
 import sys
